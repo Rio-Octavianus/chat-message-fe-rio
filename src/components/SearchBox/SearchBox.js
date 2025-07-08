@@ -24,7 +24,7 @@ export default function SearchBox({ value, onChange }) {
       {/* Input */}
       <input
         type="search"
-        className="block w-full rounded border border-neutral-300 bg-transparent px-10 py-[0.25rem] text-base leading-[1.6] text-neutral-700 outline-none transition duration-200 ease-in-out focus:border-primary focus:shadow focus:outline-none"
+        className="block w-full rounded border rounded-full border-neutral-400 bg-transparent px-10 py-[0.25rem] text-base leading-[1.6] text-neutral-900 outline-none transition duration-200 ease-in-out focus:border-black focus:shadow focus:outline-none"
         placeholder="Search Contact"
         value={value}
         onChange={onChange}
