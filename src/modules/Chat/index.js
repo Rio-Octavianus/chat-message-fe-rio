@@ -5,13 +5,10 @@ import Input from "../../components/Input/Input";
 
 const Chat = () => {
   const contacts = [
-    { name: "Agung", status: "Online", img: Image },
-    { name: "Budi", status: "Online", img: Image },
-    { name: "Tarno", status: "Online", img: Image },
-    { name: "Dicky", status: "Online", img: Image },
+    { name: "Hutao-Bot", status: "Online", img: Image },
   ];
 
-  const [selectedContact, setSelectedContact] = useState("Agung");
+  const [selectedContact, setSelectedContact] = useState("Hutao-Bot");
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState("");
   const [allChats, setAllChats] = useState({});
@@ -27,21 +24,45 @@ const Chat = () => {
     localStorage.setItem("allChats", JSON.stringify(allChats));
   }, [allChats]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (message.trim() === "") return;
 
     const now = new Date();
-    const timestamp = now.toISOString();
     const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const newMessage = { from: "me", text: message, time: timeString, timestamp: timestamp };
-    const updatedChats = {
-      ...allChats,
-      [selectedContact]: [...(allChats[selectedContact] || []), newMessage],
-    };
+    try {
+      const response = await fetch("http://localhost:3001/api/bot/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
 
-    setAllChats(updatedChats);
-    setMessage("");
+      const data = await response.json();
+      const { reply, userSentiment, botSentiment } = data;
+
+      const userMessage = {
+        from: "me",
+        text: message,
+        time: timeString,
+        sentiment: userSentiment
+      };
+
+      const botReply = {
+        from: selectedContact,
+        text: reply,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sentiment: botSentiment
+      };
+
+      setAllChats((prev) => ({
+        ...prev,
+        [selectedContact]: [...(prev[selectedContact] || []), userMessage, botReply],
+      }));
+
+      setMessage("");
+    } catch (error) {
+      console.error("Error communicating with server:", error);
+    }
   };
 
   const currentChatLog = allChats[selectedContact] || [];
@@ -72,7 +93,7 @@ const Chat = () => {
                 const lastMessage = chatLog.length > 0
                   ? chatLog[chatLog.length - 1]
                   : null;
-                const lastMessageText = lastMessage ? lastMessage.text : 'Belum ada pesan';
+                const lastMessageText = lastMessage ? lastMessage.text : 'No messages yet';
                 const lastMessageTime = lastMessage ? lastMessage.time : '';
 
                 return (
@@ -116,26 +137,6 @@ const Chat = () => {
 
         {/* Chat Log */}
         <div className="h-[75%] w-full overflow-y-scroll overflow-x-hidden border-b shadow-sm px-14 py-6">
-          {/* Static chat khusus Agung */}
-          {selectedContact === "Agung" &&
-            Array.from({ length: 4 }).map((_, i) => (
-              <React.Fragment key={`static-${i}`}>
-                <div className="max-w-[40%] bg-[#f0fdf4] rounded-b-xl rounded-tr-xl p-4 mb-6 shadow-md">
-                  Apa kabar ?
-                  <div className="text-[11px] text-black-400 text-right mt-1">
-                    10:00 AM
-                  </div>
-                </div>
-                <div className="max-w-[40%] bg-secondary rounded-b-xl rounded-tl-xl ml-auto p-4 text-white mb-6 shadow-md">
-                  Aku baik, kabarmu gimana ?
-                  <div className="text-[11px] text-black-400 text-right mt-1">
-                    10:01 AM
-                  </div>
-                </div>
-              </React.Fragment>
-            ))}
-
-          {/* Chat dinamis */}
           {currentChatLog.map((msg, index) => (
             <div
               key={index}
@@ -145,7 +146,20 @@ const Chat = () => {
                   : "bg-[#f0fdf4] text-black rounded-tr-xl"
               }`}
             >
-              <div>{msg.text}</div>
+              <div className="flex justify-between items-center">
+                <div>{msg.text}</div>
+                {msg.sentiment && (
+                  <span
+                    className={`ml-2 text-xs font-bold px-2 py-1 rounded-full ${
+                      msg.sentiment === "Positive" ? "bg-green-200 text-green-800" :
+                      msg.sentiment === "Negative" ? "bg-red-200 text-red-800" :
+                      "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    {msg.sentiment}
+                  </span>
+                )}
+              </div>
               <div className="text-[11px] text-white-400 text-right mt-1">
                 {msg.time}
               </div>
@@ -164,24 +178,6 @@ const Chat = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
 
-          {/* Icon tambahan */}
-          <div className="mr-2 mt-1 p-1 cursor-pointer bg-secondary rounded-full">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="30"
-              height="30"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#000000"
-              strokeWidth="1"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5" />
-            </svg>
-          </div>
-
-          {/* Icon kirim */}
           <div
             className="mr-2 mt-1 p-1 cursor-pointer bg-secondary rounded-full"
             onClick={handleSend}
